@@ -24,6 +24,13 @@ const STEPS: { id: Step; label: string }[] = [
 /** The gap notice fires late on purpose. Any prompt is a self-monitoring trigger. */
 const GAP_AT = 180
 
+/**
+ * The demo clock runs at 4x so a three minute conversation plays in about
+ * forty five seconds. Everything stays on one clock, so tool timestamps, the
+ * transcript and the gap trigger remain consistent with each other.
+ */
+const TICK_MS = 250
+
 export default function App() {
   const [role, setRole] = useState<Role>('user')
   const [step, setStep] = useState<Step>('join')
@@ -40,7 +47,7 @@ export default function App() {
 
   useEffect(() => {
     if (step !== 'live') return
-    const t = setInterval(() => setElapsed((e) => e + 1), 1000)
+    const t = setInterval(() => setElapsed((e) => e + 1), TICK_MS)
     return () => clearInterval(t)
   }, [step])
 
