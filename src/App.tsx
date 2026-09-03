@@ -86,7 +86,9 @@ export default function App() {
         setRole={setRole}
         onReset={reset}
         onSkip={
-          step === 'live' && ran.messages === null
+          // The notice only ever renders on the assistant's screen, so only
+          // offer the shortcut where it visibly does something.
+          step === 'live' && role === 'assistant' && ran.messages === null
             ? () => setElapsed((e) => Math.max(e, GAP_AT))
             : undefined
         }
