@@ -14,7 +14,9 @@ export default function LiveUser({
   onEnd: () => void
 }) {
   const [scenarioOpen, setScenarioOpen] = useState(false)
-  const [transcriptHidden, setTranscriptHidden] = useState(false)
+  // Hidden by default on this side. Watching your own words while you talk is
+  // the self-monitoring trigger this redesign suppresses everywhere else.
+  const [transcriptHidden, setTranscriptHidden] = useState(true)
 
   return (
     <div className="col">

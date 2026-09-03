@@ -44,16 +44,20 @@ recognition here — and it deliberately never reaches the address on its own, s
 failure path is what plays out unless the assistant reaches for a tool. Pressing a tool
 adds the assistant's line to the transcript, so the console and the conversation agree.
 
-Either participant can hide it. Watching your own words while you talk is itself a
-self-monitoring trigger, which is the mechanism this redesign suppresses everywhere
-else.
+It is on by default for the assistant, who is already watching an instrument panel and
+needs to track what has been covered, and off by default for the user, who is the one
+whose self-monitoring this redesign protects. Either can toggle it.
 
 ## The flow
 
-One path through the real product: **Join Conversation → join queue → audio check →
-brief → record → submit**, inside a contributor sidebar that mirrors the live one. Only
-Join Conversation is implemented; the other nav items are present so the flow sits where
-it actually sits.
+One path, the live-matching one: **join queue → matched → audio check → brief → record →
+submit**. The platform around it is deliberately absent; the brief asks for the
+conversation experience, not the global navigation.
+
+The audio check is also the first failure state. It finds a fault on the first run — a
+steady tone under the voice — names what causes it, and offers a retry. Catching that
+here costs a contributor thirty seconds; catching it in review costs them the whole
+recording, days later, with no explanation.
 
 The example clips live on the join screen rather than before recording. Waiting for a
 match is dead time, so listening costs nobody anything, and both clips are from a

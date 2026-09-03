@@ -16,6 +16,11 @@ export default function Transcript({
   hidden: boolean
   onToggle: () => void
 }) {
+  const hiddenNote =
+    role === 'user'
+      ? 'Off by default. Reading yourself while you talk tends to make you talk worse.'
+      : 'Hidden. Turn it back on if you lose track of what has been covered.'
+
   return (
     <section className="transcript" aria-label="Live transcript">
       <div className="transcript-head">
@@ -26,9 +31,7 @@ export default function Transcript({
       </div>
 
       {hidden ? (
-        <p className="transcript-note">
-          Hidden. Some people find watching their own words distracting while they talk.
-        </p>
+        <p className="transcript-note">{hiddenNote}</p>
       ) : (
         <>
           <ul className="lines" aria-live="polite">

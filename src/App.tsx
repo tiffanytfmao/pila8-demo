@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Line, ToolId } from './data'
 import { TOOL_LINES, TRANSCRIPT } from './data'
-import Sidebar from './components/Sidebar'
+import DemoTray from './components/DemoTray'
 import JoinConversation from './screens/JoinConversation'
 import DeviceCheck from './screens/DeviceCheck'
 import UserBrief from './screens/UserBrief'
@@ -81,7 +81,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <Sidebar
+      <DemoTray
         role={role}
         setRole={setRole}
         onReset={reset}
