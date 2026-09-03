@@ -1,40 +1,52 @@
 import { useState } from 'react'
-import { USER_SCENARIO } from '../data'
-import LiveBar from '../components/LiveBar'
+import type { Line } from '../data'
+import { USER_GOAL, USER_SCENARIO } from '../data'
+import RecBar from '../components/RecBar'
+import Transcript from '../components/Transcript'
 
-/**
- * Deliberately sparse. Elapsed time, mic level, and the scenario if they want it.
- * Anything more on this screen is a self-monitoring trigger.
- */
-export default function LiveUser({ elapsed, onEnd }: { elapsed: number; onEnd: () => void }) {
-  const [open, setOpen] = useState(false)
+export default function LiveUser({
+  elapsed,
+  lines,
+  onEnd,
+}: {
+  elapsed: number
+  lines: Line[]
+  onEnd: () => void
+}) {
+  const [scenarioOpen, setScenarioOpen] = useState(false)
+  const [transcriptHidden, setTranscriptHidden] = useState(false)
 
   return (
-    <>
-      <LiveBar elapsed={elapsed}>
-        <button type="button" className="ghost-btn" onClick={onEnd}>
-          End recording
-        </button>
-      </LiveBar>
+    <div className="col">
+      <RecBar elapsed={elapsed} onEnd={onEnd} />
 
-      <div className="live-user">
-        {open ? (
-          <>
-            {USER_SCENARIO.map((para) => (
-              <p className="live-user-scenario" key={para.slice(0, 24)} style={{ marginBottom: 18 }}>
-                {para}
-              </p>
-            ))}
-            <button type="button" className="disclose" onClick={() => setOpen(false)}>
-              Hide
-            </button>
-          </>
-        ) : (
-          <button type="button" className="disclose" onClick={() => setOpen(true)}>
-            Show the situation again
-          </button>
-        )}
+      <div className="goal goal-sm">
+        <p className="goal-label">What you need out of the call</p>
+        <p className="goal-text">{USER_GOAL}</p>
       </div>
-    </>
+
+      <div style={{ marginTop: 12 }}>
+        <button type="button" className="link-btn" onClick={() => setScenarioOpen((v) => !v)}>
+          {scenarioOpen ? 'Hide the situation' : 'Show the situation again'}
+        </button>
+      </div>
+
+      {scenarioOpen && (
+        <article className="scenario" style={{ marginTop: 16 }}>
+          {USER_SCENARIO.map((para) => (
+            <p key={para.slice(0, 24)} style={{ fontSize: 17 }}>
+              {para}
+            </p>
+          ))}
+        </article>
+      )}
+
+      <Transcript
+        lines={lines}
+        role="user"
+        hidden={transcriptHidden}
+        onToggle={() => setTranscriptHidden((v) => !v)}
+      />
+    </div>
   )
 }

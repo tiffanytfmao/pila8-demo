@@ -1,43 +1,39 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { ToolId } from './data'
-import { REMOVED } from './data'
+import type { Line, ToolId } from './data'
+import { TOOL_LINES, TRANSCRIPT } from './data'
+import DeviceCheck from './screens/DeviceCheck'
 import UserBrief from './screens/UserBrief'
 import AssistantBrief from './screens/AssistantBrief'
 import LiveUser from './screens/LiveUser'
 import LiveAssistant from './screens/LiveAssistant'
 import PreSubmit from './screens/PreSubmit'
-import RemovedPanel from './components/RemovedPanel'
 
 export type Role = 'user' | 'assistant'
-export type Step = 'brief' | 'live' | 'submit'
+export type Step = 'setup' | 'brief' | 'live' | 'submit'
 
-const STEP_LABELS: Record<Step, string> = {
-  brief: 'Before recording',
-  live: 'Recording',
-  submit: 'Before submitting',
-}
-
-const STEP_SHORT: Record<Step, string> = {
-  brief: 'Before',
-  live: 'Recording',
-  submit: 'Submit',
-}
+const STEPS: { id: Step; label: string }[] = [
+  { id: 'setup', label: 'Audio' },
+  { id: 'brief', label: 'Brief' },
+  { id: 'live', label: 'Record' },
+  { id: 'submit', label: 'Submit' },
+]
 
 /** The gap notice fires late on purpose. Any prompt is a self-monitoring trigger. */
 const GAP_AT = 180
 
 export default function App() {
   const [role, setRole] = useState<Role>('user')
-  const [step, setStep] = useState<Step>('brief')
+  const [step, setStep] = useState<Step>('setup')
   const [elapsed, setElapsed] = useState(0)
   const [ran, setRan] = useState<Record<ToolId, number | null>>({
     messages: null,
     transit: null,
     calendar: null,
   })
+  const [toolLines, setToolLines] = useState<Line[]>([])
   const [calendarUpdated, setCalendarUpdated] = useState(false)
   const [flagged, setFlagged] = useState(false)
-  const [panelOpen, setPanelOpen] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
 
   useEffect(() => {
     if (step !== 'live') return
@@ -53,35 +49,40 @@ export default function App() {
 
   const runTool = useCallback(
     (id: ToolId) => {
-      setRan((r) => (r[id] !== null ? r : { ...r, [id]: elapsed }))
+      if (ran[id] !== null) return
+      setRan((r) => ({ ...r, [id]: elapsed }))
+      setToolLines((l) => [...l, { at: elapsed, who: 'assistant', text: TOOL_LINES[id] }])
     },
-    [elapsed],
+    [ran, elapsed],
   )
 
   const reset = useCallback(() => {
-    setStep('brief')
+    setStep('setup')
     setElapsed(0)
     setRan({ messages: null, transit: null, calendar: null })
+    setToolLines([])
     setCalendarUpdated(false)
     setFlagged(false)
+    setSubmitted(false)
   }, [])
 
-  const toolCount = useMemo(
-    () => Object.values(ran).filter((v) => v !== null).length,
-    [ran],
+  const toolCount = useMemo(() => Object.values(ran).filter((v) => v !== null).length, [ran])
+
+  const lines = useMemo(
+    () =>
+      [...TRANSCRIPT.filter((l) => l.at <= elapsed), ...toolLines].sort((a, b) => a.at - b.at),
+    [elapsed, toolLines],
   )
+
+  const stepIndex = STEPS.findIndex((s) => s.id === step)
 
   return (
     <>
       <header className="shell">
-        <span className="shell-brand">Pila8 · conversation task, redesigned</span>
+        <span className="shell-brand">Pila8 voice task</span>
 
         <div className="seg" role="group" aria-label="Whose screen you are looking at">
-          <button
-            type="button"
-            aria-pressed={role === 'user'}
-            onClick={() => setRole('user')}
-          >
+          <button type="button" aria-pressed={role === 'user'} onClick={() => setRole('user')}>
             User
           </button>
           <button
@@ -94,17 +95,20 @@ export default function App() {
         </div>
 
         <nav className="steps" aria-label="Stage">
-          {(Object.keys(STEP_LABELS) as Step[]).map((s, i) => (
-            <span key={s} style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
-              {i > 0 && <span aria-hidden="true">/</span>}
+          {STEPS.map((s, i) => (
+            <span key={s.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              {i > 0 && <span className="step-line" aria-hidden="true" />}
               <button
                 type="button"
-                aria-current={step === s}
-                aria-label={STEP_LABELS[s]}
-                onClick={() => setStep(s)}
+                className="step"
+                aria-current={step === s.id}
+                data-state={i < stepIndex ? 'done' : i === stepIndex ? 'current' : 'ahead'}
+                onClick={() => setStep(s.id)}
               >
-                <span className="label-long" aria-hidden="true">{STEP_LABELS[s]}</span>
-                <span className="label-short" aria-hidden="true">{STEP_SHORT[s]}</span>
+                <span className="step-num" aria-hidden="true">
+                  {i + 1}
+                </span>
+                <span className="step-label">{s.label}</span>
               </button>
             </span>
           ))}
@@ -115,59 +119,65 @@ export default function App() {
         {step === 'live' && ran.messages === null && (
           <button
             type="button"
-            className="ghost-btn"
-            aria-label="Demo: jump to 3:00"
+            className="secondary"
+            style={{ minHeight: 36, padding: '7px 13px', fontSize: 13.5 }}
             onClick={() => setElapsed((e) => Math.max(e, GAP_AT))}
           >
-            <span className="label-long" aria-hidden="true">Demo: jump to 3:00</span>
-            <span className="label-short" aria-hidden="true">Jump to 3:00</span>
+            Skip to 3:00
           </button>
         )}
-        <button type="button" className="ghost-btn" onClick={reset}>
-          Reset
-        </button>
         <button
           type="button"
-          className="ghost-btn"
-          aria-label="What was removed"
-          onClick={() => setPanelOpen(true)}
+          className="secondary"
+          style={{ minHeight: 36, padding: '7px 13px', fontSize: 13.5 }}
+          onClick={reset}
         >
-          <span className="label-long" aria-hidden="true">What was removed</span>
-          <span className="label-short" aria-hidden="true">Removed</span>
+          Reset
         </button>
       </header>
 
       <main className="page">
-        {step === 'brief' && role === 'user' && <UserBrief onReady={() => setStep('live')} />}
-        {step === 'brief' && role === 'assistant' && (
-          <AssistantBrief onReady={() => setStep('live')} />
-        )}
-        {step === 'live' && role === 'user' && (
-          <LiveUser elapsed={elapsed} onEnd={() => setStep('submit')} />
-        )}
-        {step === 'live' && role === 'assistant' && (
-          <LiveAssistant
-            elapsed={elapsed}
-            ran={ran}
-            runTool={runTool}
-            calendarUpdated={calendarUpdated}
-            onUpdateCalendar={() => setCalendarUpdated(true)}
-            gapOpen={gapOpen}
-            toolCount={toolCount}
-            onEnd={() => setStep('submit')}
-          />
-        )}
+        {step === 'setup' && <DeviceCheck onDone={() => setStep('brief')} />}
+
+        {step === 'brief' &&
+          (role === 'user' ? (
+            <UserBrief onReady={() => setStep('live')} />
+          ) : (
+            <AssistantBrief onReady={() => setStep('live')} />
+          ))}
+
+        {step === 'live' &&
+          (role === 'user' ? (
+            <LiveUser elapsed={elapsed} lines={lines} onEnd={() => setStep('submit')} />
+          ) : (
+            <LiveAssistant
+              elapsed={elapsed}
+              lines={lines}
+              ran={ran}
+              runTool={runTool}
+              calendarUpdated={calendarUpdated}
+              onUpdateCalendar={() => setCalendarUpdated(true)}
+              gapOpen={gapOpen}
+              toolCount={toolCount}
+              onEnd={() => setStep('submit')}
+            />
+          ))}
+
         {step === 'submit' && (
           <PreSubmit
             role={role}
             ran={ran}
             calendarUpdated={calendarUpdated}
             flagged={flagged}
+            submitted={submitted}
+            onSubmit={() => setSubmitted(true)}
+            onBack={() => {
+              setSubmitted(false)
+              setStep('live')
+            }}
           />
         )}
       </main>
-
-      {panelOpen && <RemovedPanel removed={REMOVED} onClose={() => setPanelOpen(false)} />}
     </>
   )
 }

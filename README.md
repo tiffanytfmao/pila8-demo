@@ -20,7 +20,8 @@ The redesign removes the script rather than adding more instruction. What's left
 - **Neither** sees any tool result until the tool runs.
 
 Counted off the current screens: 24 script lines and 18 rules removed from before
-recording. Audio guidelines move into the device check; behavioral guidelines move to
+recording. The guidelines are not gone — the audio ones now sit in the device check,
+next to a live meter, where someone can act on them; the behavioral ones moved to
 pre-submit, where the system can point at a timestamp.
 
 ## The failure this redesign creates
@@ -36,11 +37,22 @@ talking naturally and never look up the address. Recovery is three layers:
 Every check is derived from a button press in this interface — a UI event, not a
 judgement about how speech sounded. Nothing auto-approves or auto-rejects.
 
+## The transcript
+
+The recording screen shows a live transcript. It is hardcoded — there is no speech
+recognition here — and it deliberately never reaches the address on its own, so the
+failure path is what plays out unless the assistant reaches for a tool. Pressing a tool
+adds the assistant's line to the transcript, so the console and the conversation agree.
+
+Either participant can hide it. Watching your own words while you talk is itself a
+self-monitoring trigger, which is the mechanism this redesign suppresses everywhere
+else.
+
 ## Using the demo
 
-`User` / `Assistant` switches whose screen you're on; the stage nav moves through
-before / during / after. On the assistant's recording screen, **Demo: jump to 3:00**
-fires the failure path. **What was removed** opens the subtraction inventory.
+`User` / `Assistant` switches whose screen you're on. The stepper moves through audio
+check, brief, recording, and submit. On the assistant's recording screen, **Skip to
+3:00** fires the failure path.
 
 ## Run locally
 

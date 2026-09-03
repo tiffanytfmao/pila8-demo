@@ -7,87 +7,128 @@ type Props = {
   ran: Record<ToolId, number | null>
   calendarUpdated: boolean
   flagged: boolean
+  onBack: () => void
+  onSubmit: () => void
+  submitted: boolean
 }
 
 /**
- * Everything here is derived from a button press in this interface, not from
- * a judgement about how speech sounded. Nothing auto-approves or auto-rejects.
+ * Every line here is read off a button press in this interface, not off a
+ * judgement about how the speech sounded. Nothing auto-approves or auto-rejects.
  */
-export default function PreSubmit({ role, ran, calendarUpdated, flagged }: Props) {
-  const checks = [
+export default function PreSubmit({
+  role,
+  ran,
+  calendarUpdated,
+  flagged,
+  onBack,
+  onSubmit,
+  submitted,
+}: Props) {
+  const reqs = [
     {
-      met: ran.messages !== null,
-      label: 'The new address was looked up during the call',
-      metNote:
-        ran.messages !== null ? `Messages searched at ${clock(ran.messages)}.` : undefined,
-      unmetNote:
-        'The scenario needs a tool call to resolve. Reviewers look for one. Worth a note if you found the address another way.',
+      label: 'The new address was found during the call',
+      at: ran.messages,
+      done: 'Searched their messages.',
+      missing: 'The user never learned where dinner moved to. That is the problem the call was supposed to solve.',
     },
     {
-      met: ran.transit !== null,
-      label: 'A way to get there was checked',
-      metNote: ran.transit !== null ? `Transit checked at ${clock(ran.transit)}.` : undefined,
-      unmetNote: 'Nothing in the recording shows how the user gets across town.',
+      label: 'A way of getting there was worked out',
+      at: ran.transit,
+      done: 'Looked up transit.',
+      missing: 'Nothing in the call shows how the user gets across town in time.',
     },
   ]
 
-  const unmet = checks.filter((c) => !c.met).length
+  const missing = reqs.filter((r) => r.at === null).length
+
+  if (submitted) {
+    return (
+      <div className="col">
+        <div className="head">
+          <h1>Sent for review</h1>
+          <p>
+            A reviewer listens to this within a few days. Nothing on this screen decided anything —
+            it only showed you what they will be listening for.
+          </p>
+        </div>
+        <div className="actions">
+          <button type="button" className="secondary" onClick={onBack}>
+            Back to the recording
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="submit-wrap">
-      <h1>Before you submit</h1>
-      <p className="submit-sub">
-        {role === 'assistant'
-          ? 'Two things a reviewer will look for, taken from what your tools did.'
-          : 'Two things a reviewer will look for. Your partner’s tools handled these.'}
-      </p>
+    <div className="col">
+      <div className="head">
+        <h1>
+          {missing === 0
+            ? 'This one looks complete'
+            : missing === 1
+              ? 'One thing is missing'
+              : 'Two things are missing'}
+        </h1>
+        <p>
+          {missing > 0
+            ? 'Reviewers listen for two things in this scenario. You can still send it — a person makes the call, not this screen.'
+            : 'Reviewers listen for two things in this scenario, and both happened during the call.'}
+        </p>
+      </div>
 
-      {checks.map((c) => (
-        <div className="check" key={c.label}>
-          <span className={`check-mark ${c.met ? 'met' : 'unmet'}`} aria-hidden="true">
-            {c.met ? '✓' : '—'}
+      {reqs.map((r) => (
+        <div className="req" key={r.label}>
+          <span className="req-label">{r.label}</span>
+          <span className={`pill ${r.at !== null ? 'done' : 'missing'}`}>
+            {r.at !== null ? `Done at ${clock(r.at)}` : 'Missing'}
           </span>
-          <div>
-            <div className="check-label">{c.label}</div>
-            <div className="check-note">{c.met ? c.metNote : c.unmetNote}</div>
-          </div>
-          <span className="visually-hidden">{c.met ? 'Met' : 'Not met'}</span>
+          <span className="req-note">{r.at !== null ? r.done : r.missing}</span>
         </div>
       ))}
 
-      <div className="check">
-        <span className="check-mark optional" aria-hidden="true">
-          {calendarUpdated ? '✓' : '·'}
+      <div className="req">
+        <span className="req-label">Calendar updated to the new address</span>
+        <span className={`pill ${calendarUpdated ? 'done' : 'optional'}`}>
+          {calendarUpdated ? 'Done' : 'Optional'}
         </span>
-        <div>
-          <div className="check-label">Calendar updated to the new address</div>
-          <div className="check-note">
-            {calendarUpdated
-              ? 'Done during the call.'
-              : 'Not required — it wasn’t in the user’s goal. Fine either way.'}
-          </div>
-        </div>
+        <span className="req-note">
+          {calendarUpdated
+            ? 'Changed during the call.'
+            : 'Nobody asked for this, so it does not count against the recording.'}
+        </span>
       </div>
 
       {flagged && (
-        <div className="flag">
-          <div className="flag-ts">From 3:00</div>
-          <div className="flag-body">
-            A stretch where the conversation held still. Give it a listen before you send it.
+        <div className="listen">
+          <div className="listen-head">
+            <span className="listen-at">From 3:00</span>
+            <span className="req-label" style={{ fontSize: 14 }}>
+              Worth a listen before you send it
+            </span>
           </div>
+          <p className="listen-body">
+            A long stretch where the conversation held still. Simulated for this demo — a real
+            version would come from the audio.
+          </p>
         </div>
       )}
 
-      <div className="submit-actions">
-        <button type="button" className="primary">
-          Submit recording
+      <div className="actions">
+        <button type="button" className="primary" onClick={onSubmit}>
+          Send for review
         </button>
-        <span className="hint">
-          {unmet > 0
-            ? 'You can still submit. A reviewer sees the same two lines.'
-            : 'Nothing here blocks you. Review is done by a person.'}
-        </span>
+        <button type="button" className="secondary" onClick={onBack}>
+          {missing > 0 ? 'Go back and cover it' : 'Back to the recording'}
+        </button>
       </div>
+
+      <p className="hint" style={{ marginTop: 16 }}>
+        {role === 'assistant'
+          ? 'Taken from the tools you used, not from how anything sounded.'
+          : 'Taken from the tools your partner used, not from how anything sounded.'}
+      </p>
     </div>
   )
 }

@@ -1,33 +1,44 @@
-import { ASSISTANT_BRIEF } from '../data'
-import ToolConsole from '../components/ToolConsole'
+import { TOOLS } from '../data'
 
 /**
- * Capabilities, not dialogue. The console is visible and idle before recording
- * so the tools read as things you'd obviously use — layer 1 of the recovery design.
+ * Capabilities, not dialogue. The tools are named here so they read as things
+ * you'd obviously reach for once the call starts — layer 1 of the recovery design.
  */
 export default function AssistantBrief({ onReady }: { onReady: () => void }) {
-  const [first, second, third] = ASSISTANT_BRIEF
-
   return (
-    <div className="assistant-wrap">
-      <div className="assistant-brief">
-        <p>{first}</p>
-        <p>{second}</p>
-        <p className="load-bearing">{third}</p>
+    <div className="col">
+      <div className="head">
+        <h1>You’re the assistant</h1>
+        <p>
+          Someone is about to call you with a problem. You can’t see what they see, and you won’t
+          know what they need until they tell you.
+        </p>
       </div>
 
-      <ToolConsole
-        ran={{ messages: null, transit: null, calendar: null }}
-        runTool={() => {}}
-        calendarUpdated={false}
-        onUpdateCalendar={() => {}}
-        idle
-      />
+      <div className="console">
+        <div className="console-label">
+          <h2>What you can reach for</h2>
+        </div>
 
-      <div style={{ paddingTop: 44 }}>
+        <div className="feed">
+          {TOOLS.map((tool) => (
+            <div className="entry" key={tool.id} style={{ animation: 'none' }}>
+              <div className="entry-head">
+                <span className="entry-title">{tool.label}</span>
+              </div>
+              <div className="msg-body" style={{ fontSize: 14 }}>
+                {tool.affords}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="actions">
         <button type="button" className="primary" onClick={onReady}>
-          I’m ready
+          Start recording
         </button>
+        <span className="hint">The tools become live once the call starts.</span>
       </div>
     </div>
   )

@@ -53,40 +53,53 @@ export const TOOL_RESULTS = {
   },
 }
 
-/** Counted off the two screenshots of the current pre-record view. */
-export const REMOVED = {
-  scriptLines: 24,
-  rules: 18,
-  items: [
-    {
-      label: 'The 24-line conversation walkthrough',
-      why: 'It contains every fact both people will say, including the address. Nobody has to listen to find out what happens.',
-    },
-    {
-      label: '"Required tone: Frustrated, then relieved."',
-      why: 'Instructed emotion produces displayed frustration, not felt frustration.',
-    },
-    {
-      label: 'The backchannel panel — "use mm-hmm, right, I see"',
-      why: 'Backchannels placed by rule instead of by listening are audibly worse than none.',
-    },
-    {
-      label: 'The shared label "Work, Family, Travel, Health, and Community"',
-      why: 'Neither participant can act on it.',
-    },
-    {
-      label: 'The 7 conversation tips',
-      why: 'Eleven more rules to hold in your head while talking.',
-    },
-  ],
-  moved: [
-    {
-      label: 'Audio guidelines — hissing, popping, clipping',
-      to: 'the device check, where they are actionable at the moment they matter',
-    },
-    {
-      label: 'Behavioral guidelines — silences, monotone, one person dominating',
-      to: 'pre-submit review, where the system can point at a timestamp',
-    },
-  ],
+/** Audio guidance now lives in the device check, where it is actionable. */
+export const AUDIO_TIPS = [
+  {
+    lead: 'No steady hiss.',
+    body: 'A constant background tone gets a recording rejected. Move away from fans and vents, or try a different mic.',
+  },
+  {
+    lead: 'No popping on p and b sounds.',
+    body: 'Point the mic slightly off to the side of your mouth rather than straight at it.',
+  },
+  {
+    lead: 'Nothing else making noise.',
+    body: 'Music, a TV, and typing all end up in the recording underneath your voice.',
+  },
+]
+
+export type Line = { at: number; who: 'user' | 'assistant'; text: string }
+
+/**
+ * Simulated transcript. Hardcoded for the demo — there is no speech recognition
+ * here. Deliberately never reaches the address on its own, so the failure path
+ * is the one that plays out unless the assistant runs a tool.
+ */
+export const TRANSCRIPT: Line[] = [
+  { at: 4, who: 'user', text: 'So Sam moved dinner. Again.' },
+  { at: 11, who: 'assistant', text: 'Again? When is it now?' },
+  { at: 16, who: 'user', text: "Still seven. It's the where that changed." },
+  { at: 24, who: 'user', text: "It was a ten-minute walk. Now it's across town somewhere." },
+  { at: 33, who: 'assistant', text: 'Somewhere.' },
+  { at: 37, who: 'user', text: "That's the problem. The message came in while I was in the middle of something and I only half read it." },
+  { at: 50, who: 'assistant', text: "And you've got, what, an hour and change." },
+  { at: 57, who: 'user', text: 'An hour and twenty. I cleared this whole evening back when it was a walk.' },
+  { at: 70, who: 'assistant', text: "That's a rough trade." },
+  { at: 76, who: 'user', text: "My aunt's going to be there though. Haven't seen her since the spring." },
+  { at: 88, who: 'assistant', text: 'Then you want to make it.' },
+  { at: 93, who: 'user', text: "I want to make it. I just don't want to spend the night on buses to get there." },
+  { at: 108, who: 'assistant', text: 'How long has she been in town?' },
+  { at: 114, who: 'user', text: 'A week or so. She stays with Sam usually.' },
+  { at: 126, who: 'assistant', text: "Right. And Sam's the one moving things around on you." },
+  { at: 134, who: 'user', text: 'Third time this month.' },
+  { at: 145, who: 'assistant', text: 'Okay.' },
+  { at: 158, who: 'user', text: 'It is what it is.' },
+]
+
+/** Appended the moment a tool is pressed, so the console and the talk agree. */
+export const TOOL_LINES: Record<ToolId, string> = {
+  messages: "Hang on — let me pull up what Sam actually sent you.",
+  transit: "Let me see what gets you there.",
+  calendar: "I'll fix the address in your calendar too.",
 }

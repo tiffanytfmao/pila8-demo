@@ -1,14 +1,15 @@
 import type { ToolId } from '../data'
 import { TOOLS, TOOL_RESULTS } from '../data'
+import { clock } from '../format'
 
 type Props = {
   ran: Record<ToolId, number | null>
   runTool: (id: ToolId) => void
   calendarUpdated: boolean
   onUpdateCalendar: () => void
-  /** Pre-record: pressable-looking, but nothing to return yet. */
-  idle?: boolean
-  toolCount?: number
+  toolCount: number
+  /** Only the message search can produce the new address. */
+  hasAddress: boolean
 }
 
 export default function ToolConsole({
@@ -16,49 +17,62 @@ export default function ToolConsole({
   runTool,
   calendarUpdated,
   onUpdateCalendar,
-  idle = false,
   toolCount,
+  hasAddress,
 }: Props) {
+  // Chronological, so the console and the transcript beneath it read the same way.
+  const order = TOOLS.filter((t) => ran[t.id] !== null).sort(
+    (a, b) => (ran[a.id] ?? 0) - (ran[b.id] ?? 0),
+  )
+
   return (
     <section className="console" aria-label="Your tools">
-      <div className="console-head">
-        <span>Your tools</span>
-        {!idle && (
-          <span className="tally">
-            {toolCount === 1 ? '1 tool used' : `${toolCount ?? 0} tools used`}
-          </span>
-        )}
+      <div className="console-label">
+        <h2>Your tools</h2>
+        <span className="tally">
+          {toolCount === 0 ? 'None used yet' : toolCount === 1 ? '1 used' : `${toolCount} used`}
+        </span>
       </div>
 
-      {TOOLS.map((tool) => (
-        <div className="tool-row" key={tool.id}>
+      <div className="toolbar">
+        {TOOLS.map((tool) => (
           <button
+            key={tool.id}
             type="button"
-            className="tool-btn"
+            className="tool"
             data-ran={ran[tool.id] !== null}
-            aria-disabled={idle}
-            onClick={() => !idle && runTool(tool.id)}
+            disabled={ran[tool.id] !== null}
+            onClick={() => runTool(tool.id)}
           >
-            <span className="tool-btn-label">{tool.label}</span>
-            <span className="tool-btn-affords">{tool.affords}</span>
+            <span className="tool-dot" aria-hidden="true" />
+            {tool.label}
           </button>
+        ))}
+      </div>
 
-          <div className="tool-out">
-            {ran[tool.id] === null ? (
-              <span className="tool-out empty" style={{ padding: 0 }}>
-                {idle ? 'Runs during the call' : 'Not run yet'}
-              </span>
-            ) : (
+      <div className="feed">
+        {order.length === 0 ? (
+          <p className="feed-empty">
+            Press a tool above and what it finds shows up here. Neither of you has seen any of it
+            yet.
+          </p>
+        ) : (
+          order.map((tool) => (
+            <div className="entry" key={tool.id}>
+              <div className="entry-head">
+                <span className="entry-title">{tool.label}</span>
+                <span className="entry-at">{clock(ran[tool.id] ?? 0)}</span>
+              </div>
               <Result
                 id={tool.id}
                 calendarUpdated={calendarUpdated}
                 onUpdateCalendar={onUpdateCalendar}
-                hasAddress={ran.messages !== null}
+                hasAddress={hasAddress}
               />
-            )}
-          </div>
-        </div>
-      ))}
+            </div>
+          ))
+        )}
+      </div>
     </section>
   )
 }
@@ -72,60 +86,66 @@ function Result({
   id: ToolId
   calendarUpdated: boolean
   onUpdateCalendar: () => void
-  /** You can't write an address you haven't found yet. */
   hasAddress: boolean
 }) {
   if (id === 'messages') {
     const r = TOOL_RESULTS.messages
     return (
-      <div className="result">
-        <div className="result-meta">
-          {r.from} · {r.at}
+      <>
+        <div className="msg-from">
+          {r.from}, {r.at}
         </div>
-        <div className="result-body">{r.body}</div>
-      </div>
+        <div className="msg-body">{r.body}</div>
+      </>
     )
   }
 
   if (id === 'transit') {
     const r = TOOL_RESULTS.transit
     return (
-      <div className="result">
-        <div className="result-meta">{r.route}</div>
+      <>
+        <div className="msg-from">{r.route}</div>
         {r.departures.map((d) => (
           <div className="dep" key={d.leave}>
             <span className="dep-time">
-              {d.leave} → {d.arrive}
+              {d.leave} to {d.arrive}
             </span>
             <span className="dep-detail">{d.detail}</span>
           </div>
         ))}
-      </div>
+      </>
     )
   }
 
   const r = TOOL_RESULTS.calendar
   return (
-    <div className="result">
-      <div className="cal-card">
-        <div className="result-body">
-          {r.title} · {r.time}
-        </div>
-        <div className={calendarUpdated ? 'cal-loc fresh' : 'cal-loc stale'}>
-          {calendarUpdated ? '418 Maple St' : r.location}
-        </div>
-        {!calendarUpdated && (
-          <button
-            type="button"
-            className="edit-link"
-            disabled={!hasAddress}
-            title={hasAddress ? undefined : 'No new address yet'}
-            onClick={onUpdateCalendar}
-          >
-            {hasAddress ? 'Change location' : 'Change location — no new address yet'}
-          </button>
+    <>
+      <div className="cal-line">
+        {r.title}, {r.time}
+      </div>
+      <div className="cal-line">
+        {calendarUpdated ? (
+          <>
+            <span className="cal-loc fresh">418 Maple St</span>{' '}
+            <span className="cal-was">{r.location}</span>
+          </>
+        ) : (
+          <span className="cal-loc stale">{r.location}</span>
         )}
       </div>
-    </div>
+
+      {!calendarUpdated && (
+        <div className="entry-action">
+          <button
+            type="button"
+            className="secondary"
+            disabled={!hasAddress}
+            onClick={onUpdateCalendar}
+          >
+            {hasAddress ? 'Change to 418 Maple St' : 'No new address to save yet'}
+          </button>
+        </div>
+      )}
+    </>
   )
 }

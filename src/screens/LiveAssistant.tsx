@@ -1,9 +1,12 @@
-import type { ToolId } from '../data'
-import LiveBar from '../components/LiveBar'
+import { useState } from 'react'
+import type { Line, ToolId } from '../data'
+import RecBar from '../components/RecBar'
 import ToolConsole from '../components/ToolConsole'
+import Transcript from '../components/Transcript'
 
 type Props = {
   elapsed: number
+  lines: Line[]
   ran: Record<ToolId, number | null>
   runTool: (id: ToolId) => void
   calendarUpdated: boolean
@@ -13,12 +16,9 @@ type Props = {
   onEnd: () => void
 }
 
-/**
- * The console is the page. Results appear only when a tool runs — neither
- * participant has seen any of this before now.
- */
 export default function LiveAssistant({
   elapsed,
+  lines,
   ran,
   runTool,
   calendarUpdated,
@@ -27,30 +27,34 @@ export default function LiveAssistant({
   toolCount,
   onEnd,
 }: Props) {
+  const [transcriptHidden, setTranscriptHidden] = useState(false)
+
   return (
-    <>
-      <LiveBar elapsed={elapsed}>
-        <button type="button" className="ghost-btn" onClick={onEnd}>
-          End recording
-        </button>
-      </LiveBar>
+    <div className="col">
+      <RecBar elapsed={elapsed} onEnd={onEnd} />
 
-      <div className="assistant-wrap" style={{ paddingTop: 28 }}>
-        <ToolConsole
-          ran={ran}
-          runTool={runTool}
-          calendarUpdated={calendarUpdated}
-          onUpdateCalendar={onUpdateCalendar}
-          toolCount={toolCount}
-        />
+      <ToolConsole
+        ran={ran}
+        runTool={runTool}
+        calendarUpdated={calendarUpdated}
+        onUpdateCalendar={onUpdateCalendar}
+        toolCount={toolCount}
+        hasAddress={ran.messages !== null}
+      />
 
-        {/* Layer 2: names the gap, never the words. Assistant only, fires late. */}
-        {gapOpen && (
-          <p className="gap-notice" role="status">
-            The address hasn’t come up yet.
-          </p>
-        )}
-      </div>
-    </>
+      {/* Layer 2: names the gap, never the words. Assistant only, fires late. */}
+      {gapOpen && (
+        <p className="gap-notice" role="status">
+          The address hasn’t come up yet.
+        </p>
+      )}
+
+      <Transcript
+        lines={lines}
+        role="assistant"
+        hidden={transcriptHidden}
+        onToggle={() => setTranscriptHidden((v) => !v)}
+      />
+    </div>
   )
 }
