@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Line, ToolId } from './data'
 import { TOOL_LINES, TRANSCRIPT } from './data'
+import Sidebar from './components/Sidebar'
+import JoinConversation from './screens/JoinConversation'
 import DeviceCheck from './screens/DeviceCheck'
 import UserBrief from './screens/UserBrief'
 import AssistantBrief from './screens/AssistantBrief'
@@ -9,8 +11,9 @@ import LiveAssistant from './screens/LiveAssistant'
 import PreSubmit from './screens/PreSubmit'
 
 export type Role = 'user' | 'assistant'
-export type Step = 'setup' | 'brief' | 'live' | 'submit'
+export type Step = 'join' | 'setup' | 'brief' | 'live' | 'submit'
 
+/** Shown only once the task itself starts; joining the queue is not a task step. */
 const STEPS: { id: Step; label: string }[] = [
   { id: 'setup', label: 'Audio' },
   { id: 'brief', label: 'Brief' },
@@ -23,7 +26,7 @@ const GAP_AT = 180
 
 export default function App() {
   const [role, setRole] = useState<Role>('user')
-  const [step, setStep] = useState<Step>('setup')
+  const [step, setStep] = useState<Step>('join')
   const [elapsed, setElapsed] = useState(0)
   const [ran, setRan] = useState<Record<ToolId, number | null>>({
     messages: null,
@@ -57,7 +60,7 @@ export default function App() {
   )
 
   const reset = useCallback(() => {
-    setStep('setup')
+    setStep('join')
     setElapsed(0)
     setRan({ messages: null, transit: null, calendar: null })
     setToolLines([])
@@ -77,76 +80,56 @@ export default function App() {
   const stepIndex = STEPS.findIndex((s) => s.id === step)
 
   return (
-    <>
-      <header className="shell">
-        <span className="shell-brand">Pila8 voice task</span>
+    <div className="app">
+      <Sidebar
+        role={role}
+        setRole={setRole}
+        onReset={reset}
+        onSkip={
+          step === 'live' && ran.messages === null
+            ? () => setElapsed((e) => Math.max(e, GAP_AT))
+            : undefined
+        }
+      />
 
-        <div className="seg" role="group" aria-label="Whose screen you are looking at">
-          <button type="button" aria-pressed={role === 'user'} onClick={() => setRole('user')}>
-            User
-          </button>
-          <button
-            type="button"
-            aria-pressed={role === 'assistant'}
-            onClick={() => setRole('assistant')}
-          >
-            Assistant
-          </button>
-        </div>
-
-        <nav className="steps" aria-label="Stage">
-          {STEPS.map((s, i) => (
-            <span key={s.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              {i > 0 && <span className="step-line" aria-hidden="true" />}
-              <button
-                type="button"
-                className="step"
-                aria-current={step === s.id}
-                data-state={i < stepIndex ? 'done' : i === stepIndex ? 'current' : 'ahead'}
-                onClick={() => setStep(s.id)}
-              >
-                <span className="step-num" aria-hidden="true">
-                  {i + 1}
+      <div>
+        {step !== 'join' && (
+          <header className="shell">
+            <nav className="steps" aria-label="Where you are in this task">
+              {STEPS.map((s2, i) => (
+                <span key={s2.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  {i > 0 && <span className="step-line" aria-hidden="true" />}
+                  <button
+                    type="button"
+                    className="step"
+                    aria-current={step === s2.id}
+                    data-state={i < stepIndex ? 'done' : i === stepIndex ? 'current' : 'ahead'}
+                    onClick={() => setStep(s2.id)}
+                  >
+                    <span className="step-num" aria-hidden="true">
+                      {i + 1}
+                    </span>
+                    <span className="step-label">{s2.label}</span>
+                  </button>
                 </span>
-                <span className="step-label">{s.label}</span>
-              </button>
-            </span>
-          ))}
-        </nav>
-
-        <span className="shell-spacer" />
-
-        {step === 'live' && ran.messages === null && (
-          <button
-            type="button"
-            className="secondary"
-            style={{ minHeight: 36, padding: '7px 13px', fontSize: 13.5 }}
-            onClick={() => setElapsed((e) => Math.max(e, GAP_AT))}
-          >
-            Skip to 3:00
-          </button>
+              ))}
+            </nav>
+          </header>
         )}
-        <button
-          type="button"
-          className="secondary"
-          style={{ minHeight: 36, padding: '7px 13px', fontSize: 13.5 }}
-          onClick={reset}
-        >
-          Reset
-        </button>
-      </header>
 
-      <main className="page">
-        {step === 'setup' && <DeviceCheck onDone={() => setStep('brief')} />}
+        <main className="page">
+          {step === 'join' && <JoinConversation onMatched={() => setStep('setup')} />}
 
-        {step === 'brief' &&
+          {step === 'setup' && <DeviceCheck onDone={() => setStep('brief')} />}
+
+          {step === 'brief' &&
           (role === 'user' ? (
             <UserBrief onReady={() => setStep('live')} />
           ) : (
             <AssistantBrief onReady={() => setStep('live')} />
           ))}
 
-        {step === 'live' &&
+          {step === 'live' &&
           (role === 'user' ? (
             <LiveUser elapsed={elapsed} lines={lines} onEnd={() => setStep('submit')} />
           ) : (
@@ -163,7 +146,7 @@ export default function App() {
             />
           ))}
 
-        {step === 'submit' && (
+          {step === 'submit' && (
           <PreSubmit
             role={role}
             ran={ran}
@@ -176,8 +159,9 @@ export default function App() {
               setStep('live')
             }}
           />
-        )}
-      </main>
-    </>
+          )}
+        </main>
+      </div>
+    </div>
   )
 }

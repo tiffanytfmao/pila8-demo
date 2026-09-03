@@ -48,11 +48,23 @@ Either participant can hide it. Watching your own words while you talk is itself
 self-monitoring trigger, which is the mechanism this redesign suppresses everywhere
 else.
 
+## The flow
+
+One path through the real product: **Join Conversation → join queue → audio check →
+brief → record → submit**, inside a contributor sidebar that mirrors the live one. Only
+Join Conversation is implemented; the other nav items are present so the flow sits where
+it actually sits.
+
+The example clips live on the join screen rather than before recording. Waiting for a
+match is dead time, so listening costs nobody anything, and both clips are from a
+different scenario than the one you get — a clip models how people sound without handing
+anyone words to reuse.
+
 ## Using the demo
 
-`User` / `Assistant` switches whose screen you're on. The stepper moves through audio
-check, brief, recording, and submit. On the assistant's recording screen, **Skip to
-3:00** fires the failure path.
+Demo-only controls sit in a dashed tray at the bottom of the sidebar, kept visually
+apart from the product: role switch, a jump to the three-minute mark with no tool used
+(the failure path), and start over.
 
 ## Run locally
 
